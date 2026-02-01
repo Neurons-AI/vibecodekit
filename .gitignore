@@ -40,6 +40,7 @@ venv/
 
 # Antigravity user config
 .agent/settings.json
+.agent/settings.local.json
 
 # Logs
 *.log
