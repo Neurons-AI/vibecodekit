@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git remote add:*)",
+      "Bash(git -C /Users/xnohat/vibecodekit remote -v)"
+    ]
+  }
+}
