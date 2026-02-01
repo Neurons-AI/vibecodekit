@@ -74,13 +74,17 @@ INVESTIGATING
 - Which file(s) and function(s) contain the bug?
 - What is the exact code path that leads to the failure?
 - Why does the current code produce the wrong behavior?
-- Reference specific lines: file_path:line_number -->
+- Reference specific lines: file_path:line_number
+- When helpful, include a short ASCII diagram to visualize the flow
+  (e.g. call chain, data flow, state transitions) -->
 
 ## Proposed Fixes
 <!-- One or more fix options, ordered by recommendation:
 - Fix Option 1 (Recommended): description, files to change, approach
 - Fix Option 2 (Alternative): description, files to change, approach
-- Trade-offs and risks of each option -->
+- Trade-offs and risks of each option
+- When helpful, include a short before/after ASCII diagram or table
+  to clarify what the fix changes -->
 
 ## Verification Plan
 <!-- How to verify the fix:
@@ -158,4 +162,6 @@ Update BUG_REPORT.md with the Human's feedback. Re-present the updated sections 
 - **Document everything** — keep BUG_REPORT.md as the single source of truth
 - **Be transparent** — if uncertain about the root cause, say so and propose investigation steps
 - **Reference code precisely** — use `file_path:line_number` format when discussing code
+- **Visualize when it helps** — use short ASCII diagrams (flow charts, call chains, state transitions, before/after comparisons) in Root Cause Analysis and Proposed Fixes to make complex logic easier to understand. Keep diagrams compact — clarity over decoration, never add visual noise just for the sake of it
+- **Keep reports lean** — BUG_REPORT.md should be concise and token-efficient. Every line should earn its place. Prefer a 3-line diagram over a 10-line paragraph when it communicates the same idea
 - **Loop until resolved** — continue the research-fix-verify cycle until the Human confirms the bug is fixed
