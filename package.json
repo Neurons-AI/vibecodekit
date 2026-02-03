@@ -1,6 +1,6 @@
 {
   "name": "vibecodekit",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Prebuilt skills and agents for Vibe Coding — Claude Code & Antigravity",
   "bin": {
     "vibecodekit": "./bin/cli.js"
@@ -21,7 +21,6 @@
   "files": [
     "bin/",
     "install.sh",
-    ".claude/skills/",
-    ".agent/skills/"
+    ".claude/skills/"
   ]
 }

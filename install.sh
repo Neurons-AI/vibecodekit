@@ -18,8 +18,7 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 # Flags
-INSTALL_CLAUDE=false
-INSTALL_AGENT=false
+TARGET_DIR=""
 LIST_ONLY=false
 FORCE=false
 PICK_INDIVIDUAL=false
@@ -47,13 +46,17 @@ usage() {
   echo "  npx vibecodekit [options]"
   echo ""
   echo -e "${BOLD}Options:${NC}"
-  echo "  --claude       Install Claude Code skills only"
-  echo "  --agent        Install Antigravity agents only"
-  echo "  --all          Install everything"
-  echo "  --list         List available skills and agents"
-  echo "  --pick         Pick individual skills/agents to install"
-  echo "  --force        Overwrite existing files without asking"
-  echo "  -h, --help     Show this help message"
+  echo "  --target <dir>   Set target directory (.claude, .cursor, .agent)"
+  echo "  --list           List available skills"
+  echo "  --pick           Pick individual skills to install"
+  echo "  --force          Overwrite existing files without asking"
+  echo "  -h, --help       Show this help message"
+  echo ""
+  echo -e "${BOLD}Examples:${NC}"
+  echo "  npx vibecodekit                    # Interactive mode"
+  echo "  npx vibecodekit --target .claude   # Install to .claude"
+  echo "  npx vibecodekit --target .cursor   # Install to .cursor"
+  echo "  npx vibecodekit --list             # List available skills"
   echo ""
 }
 
@@ -73,10 +76,9 @@ download_repo() {
 
 print_list() {
   local src="$1"
-  local has_claude=false
-  local has_agent=false
+  local has_skills=false
 
-  echo -e "${BOLD}Available items:${NC}"
+  echo -e "${BOLD}Available skills:${NC}"
   echo ""
 
   if [ -d "$src/.claude/skills" ]; then
@@ -85,65 +87,32 @@ print_list() {
       local name
       name=$(basename "$skill_dir")
       [ "$name" = ".DS_Store" ] && continue
-      if [ "$has_claude" = false ]; then
-        echo -e "  ${CYAN}${BOLD}Claude Code Skills (.claude/skills/)${NC}"
-        has_claude=true
+      if [ "$has_skills" = false ]; then
+        has_skills=true
       fi
       local desc=""
       if [ -f "$skill_dir/SKILL.md" ]; then
         desc=$(grep -m1 "^description:" "$skill_dir/SKILL.md" 2>/dev/null | sed 's/^description: *//' || true)
       fi
       if [ -n "$desc" ]; then
-        echo -e "    ${GREEN}$name${NC} — $desc"
+        echo -e "  ${GREEN}$name${NC} — $desc"
       else
-        echo -e "    ${GREEN}$name${NC}"
+        echo -e "  ${GREEN}$name${NC}"
       fi
     done
   fi
 
-  if [ -d "$src/.agent/skills" ]; then
-    for agent_dir in "$src/.agent/skills"/*/; do
-      [ -d "$agent_dir" ] || continue
-      local name
-      name=$(basename "$agent_dir")
-      [ "$name" = ".DS_Store" ] && continue
-      if [ "$has_agent" = false ]; then
-        echo ""
-        echo -e "  ${CYAN}${BOLD}Antigravity Agents (.agent/skills/)${NC}"
-        has_agent=true
-      fi
-      local desc=""
-      if [ -f "$agent_dir/SKILL.md" ]; then
-        desc=$(grep -m1 "^description:" "$agent_dir/SKILL.md" 2>/dev/null | sed 's/^description: *//' || true)
-      fi
-      if [ -n "$desc" ]; then
-        echo -e "    ${GREEN}$name${NC} — $desc"
-      else
-        echo -e "    ${GREEN}$name${NC}"
-      fi
-    done
-  fi
-
-  if [ "$has_claude" = false ] && [ "$has_agent" = false ]; then
-    echo -e "  ${YELLOW}No skills or agents found.${NC}"
+  if [ "$has_skills" = false ]; then
+    echo -e "  ${YELLOW}No skills found.${NC}"
   fi
   echo ""
 }
 
 copy_skill() {
   local src="$1"
-  local type="$2"
-  local name="$3"
-  local dest_dir
-
-  local src_path
-  if [ "$type" = "claude" ]; then
-    src_path="$src/.claude/skills/$name"
-    dest_dir=".claude/skills/$name"
-  else
-    src_path="$src/.agent/skills/$name"
-    dest_dir=".agent/skills/$name"
-  fi
+  local name="$2"
+  local src_path="$src/.claude/skills/$name"
+  local dest_dir="$TARGET_DIR/skills/$name"
 
   if [ ! -e "$src_path" ]; then
     echo -e "${RED}  Not found: $name${NC}"
@@ -189,28 +158,39 @@ copy_skill() {
   else
     cp "$src_path" "$dest_dir/"
   fi
-  echo -e "  ${GREEN}Installed: $name${NC}"
+  echo -e "  ${GREEN}Installed: $name → $dest_dir${NC}"
+}
+
+select_ai_tool() {
+  echo -e "${BOLD}Which AI Coding tool are you using?${NC}"
+  echo "  1) Claude Code"
+  echo "  2) Cursor"
+  echo "  3) Antigravity / Codex"
+  echo "  4) Not sure"
+  echo ""
+  read -rp "Choose [1-4]: " tool_choice
+
+  case "$tool_choice" in
+    1) TARGET_DIR=".claude" ;;
+    2) TARGET_DIR=".cursor" ;;
+    3) TARGET_DIR=".agent" ;;
+    4) TARGET_DIR=".agent" ;;
+    *) echo -e "${RED}Invalid choice. Defaulting to .agent${NC}"; TARGET_DIR=".agent" ;;
+  esac
+
+  echo ""
+  echo -e "${CYAN}Skills will be installed to: ${BOLD}$TARGET_DIR/skills/${NC}"
+  echo ""
 }
 
 interactive_mode() {
   local src="$1"
 
-  echo -e "${BOLD}What do you want to install?${NC}"
-  echo "  1) Claude Code skills"
-  echo "  2) Antigravity agents"
-  echo "  3) Both"
-  echo ""
-  read -rp "Choose [1-3]: " scope_choice
+  # Ask which AI tool
+  select_ai_tool
 
-  case "$scope_choice" in
-    1) INSTALL_CLAUDE=true ;;
-    2) INSTALL_AGENT=true ;;
-    3) INSTALL_CLAUDE=true; INSTALL_AGENT=true ;;
-    *) echo -e "${RED}Invalid choice.${NC}"; exit 1 ;;
-  esac
-
-  echo ""
-  echo -e "${BOLD}Install full kit or pick individual items?${NC}"
+  # Ask for installation granularity
+  echo -e "${BOLD}Install full kit or pick individual skills?${NC}"
   echo "  1) Full kit"
   echo "  2) Pick individual"
   echo ""
@@ -224,13 +204,12 @@ interactive_mode() {
 pick_items() {
   local src="$1"
   local items=()
-  local display_items=()
   local idx=1
 
   echo ""
-  echo -e "${BOLD}Available items:${NC}"
+  echo -e "${BOLD}Available skills:${NC}"
 
-  if [ "$INSTALL_CLAUDE" = true ] && [ -d "$src/.claude/skills" ]; then
+  if [ -d "$src/.claude/skills" ]; then
     for skill_dir in "$src/.claude/skills"/*/; do
       [ -d "$skill_dir" ] || continue
       local name
@@ -240,38 +219,18 @@ pick_items() {
       if [ -f "$skill_dir/SKILL.md" ]; then
         desc=$(grep -m1 "^description:" "$skill_dir/SKILL.md" 2>/dev/null | sed 's/^description: *//' || true)
       fi
-      items+=("claude:$name")
+      items+=("$name")
       if [ -n "$desc" ]; then
-        echo -e "  ${BOLD}$idx)${NC} ${CYAN}[claude]${NC} ${GREEN}$name${NC} — $desc"
+        echo -e "  ${BOLD}$idx)${NC} ${GREEN}$name${NC} — $desc"
       else
-        echo -e "  ${BOLD}$idx)${NC} ${CYAN}[claude]${NC} ${GREEN}$name${NC}"
-      fi
-      idx=$((idx + 1))
-    done
-  fi
-
-  if [ "$INSTALL_AGENT" = true ] && [ -d "$src/.agent/skills" ]; then
-    for agent_dir in "$src/.agent/skills"/*/; do
-      [ -d "$agent_dir" ] || continue
-      local name
-      name=$(basename "$agent_dir")
-      [ "$name" = ".DS_Store" ] && continue
-      local desc=""
-      if [ -f "$agent_dir/SKILL.md" ]; then
-        desc=$(grep -m1 "^description:" "$agent_dir/SKILL.md" 2>/dev/null | sed 's/^description: *//' || true)
-      fi
-      items+=("agent:$name")
-      if [ -n "$desc" ]; then
-        echo -e "  ${BOLD}$idx)${NC} ${CYAN}[agent]${NC} ${GREEN}$name${NC} — $desc"
-      else
-        echo -e "  ${BOLD}$idx)${NC} ${CYAN}[agent]${NC} ${GREEN}$name${NC}"
+        echo -e "  ${BOLD}$idx)${NC} ${GREEN}$name${NC}"
       fi
       idx=$((idx + 1))
     done
   fi
 
   if [ ${#items[@]} -eq 0 ]; then
-    echo -e "${YELLOW}  No items available.${NC}"
+    echo -e "${YELLOW}  No skills available.${NC}"
     exit 0
   fi
 
@@ -289,34 +248,22 @@ pick_items() {
   done
 
   echo ""
-  echo -e "${BOLD}Installing ${#selected[@]} item(s)...${NC}"
-  for item in "${selected[@]}"; do
-    IFS=':' read -r type name <<< "$item"
-    copy_skill "$src" "$type" "$name"
+  echo -e "${BOLD}Installing ${#selected[@]} skill(s) to $TARGET_DIR/skills/...${NC}"
+  for name in "${selected[@]}"; do
+    copy_skill "$src" "$name"
   done
 }
 
-install_all_type() {
+install_all() {
   local src="$1"
-  local type="$2"
 
-  if [ "$type" = "claude" ] && [ -d "$src/.claude/skills" ]; then
+  if [ -d "$src/.claude/skills" ]; then
     for skill_dir in "$src/.claude/skills"/*/; do
       [ -d "$skill_dir" ] || continue
       local name
       name=$(basename "$skill_dir")
       [ "$name" = ".DS_Store" ] && continue
-      copy_skill "$src" "claude" "$name"
-    done
-  fi
-
-  if [ "$type" = "agent" ] && [ -d "$src/.agent/skills" ]; then
-    for agent_dir in "$src/.agent/skills"/*/; do
-      [ -d "$agent_dir" ] || continue
-      local name
-      name=$(basename "$agent_dir")
-      [ "$name" = ".DS_Store" ] && continue
-      copy_skill "$src" "agent" "$name"
+      copy_skill "$src" "$name"
     done
   fi
 }
@@ -325,9 +272,15 @@ main() {
   # Parse arguments
   while [ $# -gt 0 ]; do
     case "$1" in
-      --claude) INSTALL_CLAUDE=true; shift ;;
-      --agent) INSTALL_AGENT=true; shift ;;
-      --all) INSTALL_CLAUDE=true; INSTALL_AGENT=true; shift ;;
+      --target)
+        shift
+        if [ $# -eq 0 ]; then
+          echo -e "${RED}Error: --target requires a value${NC}"
+          exit 1
+        fi
+        TARGET_DIR="$1"
+        shift
+        ;;
       --list) LIST_ONLY=true; shift ;;
       --pick) PICK_INDIVIDUAL=true; shift ;;
       --force) FORCE=true; shift ;;
@@ -348,8 +301,8 @@ main() {
     exit 0
   fi
 
-  # If no scope flags given, go interactive
-  if [ "$INSTALL_CLAUDE" = false ] && [ "$INSTALL_AGENT" = false ]; then
+  # If no target specified, go interactive
+  if [ -z "$TARGET_DIR" ]; then
     interactive_mode "$src"
   fi
 
@@ -357,13 +310,12 @@ main() {
   if [ "$PICK_INDIVIDUAL" = true ]; then
     pick_items "$src"
   else
-    echo -e "${BOLD}Installing...${NC}"
-    [ "$INSTALL_CLAUDE" = true ] && install_all_type "$src" "claude"
-    [ "$INSTALL_AGENT" = true ] && install_all_type "$src" "agent"
+    echo -e "${BOLD}Installing skills to $TARGET_DIR/skills/...${NC}"
+    install_all "$src"
   fi
 
   echo ""
-  echo -e "${GREEN}${BOLD}Done!${NC} Vibe Code Kit installed successfully."
+  echo -e "${GREEN}${BOLD}Done!${NC} Vibe Code Kit installed to ${CYAN}$TARGET_DIR/skills/${NC}"
   echo ""
 }
 

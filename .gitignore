@@ -38,7 +38,11 @@ venv/
 # Claude Code user config (don't ship user-specific settings)
 .claude/settings.json
 
-# Antigravity user config
+# Cursor user config
+.cursor/settings.json
+.cursor/settings.local.json
+
+# Antigravity/Codex user config (for users who install to .agent)
 .agent/settings.json
 .agent/settings.local.json
 
