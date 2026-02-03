@@ -26,7 +26,7 @@ Follow the 6 phases below **in strict order**. Do NOT skip human review checkpoi
 
 Run the detection script:
 ```bash
-bash ~/.claude/skills/vibe-builder/scripts/detect-ai-tool.sh
+bash .claude/skills/vibe-builder/scripts/detect-ai-tool.sh
 ```
 
 | Result    | Action                     |
@@ -42,7 +42,7 @@ bash ~/.claude/skills/vibe-builder/scripts/detect-ai-tool.sh
 
 ### ⛔ CONTEXT OVERFLOW RECOVERY
 **When context gets full or you feel lost in a long session:**
-1. Re-read the vibe-builder skill: `~/.claude/skills/vibe-builder/SKILL.md`
+1. Re-read the vibe-builder skill: `.claude/skills/vibe-builder/SKILL.md`
 2. Re-read `IMPLEMENTATION_PLAN.md` to check current progress
 3. Re-read `TEST_PLAN.md` (if exists) to check test status
 4. Follow the workflow strictly - especially the checkpoints below!
@@ -91,7 +91,7 @@ Add this hook to `.claude/settings.json` in the project root:
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/skills/vibe-builder/scripts/context-recovery.sh"
+            "command": ""$CLAUDE_PROJECT_DIR"/.claude/skills/vibe-builder/scripts/context-recovery.sh"
           }
         ]
       }
@@ -320,7 +320,7 @@ Create a file `IMPLEMENTATION_PLAN.md` with detailed implementation tasks:
 3. ⛔ **STOP and wait for Human to review TEST_PLAN.md**
 4. Only proceed to run tests AFTER Human approves
 
-**Context Overflow?** Re-read skill file: `~/.claude/skills/vibe-builder/SKILL.md`
+**Context Overflow?** Re-read skill file: `.claude/skills/vibe-builder/SKILL.md`
 
 ---
 
@@ -448,7 +448,7 @@ EVERY 3-5 TASKS:
   3. Ensure you're building what was specified, not drifting
 
 WHEN CONTEXT FEELS FULL OR YOU FEEL LOST:
-  1. Re-read this skill file: ~/.claude/skills/vibe-builder/SKILL.md
+  1. Re-read this skill file: .claude/skills/vibe-builder/SKILL.md
   2. Re-read IMPLEMENTATION_PLAN.md - find where you are
   3. Check CLAUDE.md/GEMINI.md "WORKFLOW CHECKPOINTS" section (already in context)
   4. Remember: After coding complete → TEST_PLAN.md → STOP for Human review

@@ -49,7 +49,7 @@ if [ -f "TEST_PLAN.md" ]; then
 fi
 
 echo "### CRITICAL REMINDER:"
-echo "1. Re-read skill file: ~/.claude/skills/vibe-builder/SKILL.md"
+echo "1. Re-read skill file: .claude/skills/vibe-builder/SKILL.md"
 echo "2. Re-read IMPLEMENTATION_PLAN.md for current progress"
 echo "3. Re-read TEST_PLAN.md (if exists) for test status"
 echo "4. Follow workflow strictly - especially checkpoints!"
