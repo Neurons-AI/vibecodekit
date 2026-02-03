@@ -18,7 +18,93 @@ Follow the 6 phases below **in strict order**. Do NOT skip human review checkpoi
 
 **Goal:** Transform the raw idea into detailed technical documentation based on deep research.
 
-### Step 1.1: Deep Research (MANDATORY - BE THOROUGH)
+### Step 1.1: Setup Context Recovery (DO THIS FIRST!)
+
+**Setup context recovery BEFORE research - research will consume lots of context!**
+
+#### 1.1a: Detect AI Tool & Create Config File
+
+Run the detection script:
+```bash
+bash ~/.claude/skills/vibe-builder/scripts/detect-ai-tool.sh
+```
+
+| Result    | Action                     |
+| --------- | -------------------------- |
+| `CLAUDE`  | Create/update `CLAUDE.md`  |
+| `GEMINI`  | Create/update `GEMINI.md`  |
+| `UNKNOWN` | Ask Human which tool       |
+
+**Add this section to CLAUDE.md or GEMINI.md** (create file if not exists):
+
+```markdown
+## Vibe Builder Project Reference
+
+### ⛔ CONTEXT OVERFLOW RECOVERY
+**When context gets full or you feel lost in a long session:**
+1. Re-read the vibe-builder skill: `~/.claude/skills/vibe-builder/SKILL.md`
+2. Re-read `IMPLEMENTATION_PLAN.md` to check current progress
+3. Re-read `TEST_PLAN.md` (if exists) to check test status
+4. Follow the workflow strictly - especially the checkpoints below!
+
+### ⚠️ WORKFLOW CHECKPOINTS (MANDATORY - DO NOT SKIP!)
+| After Phase | Action |
+| --- | --- |
+| Phase 3 (Coding) complete | → Create TEST_PLAN.md → **⛔ STOP for Human review** |
+| Phase 4 (Test Plan) approved | → Execute tests autonomously |
+| Phase 5 (Testing) complete | → Report results → Enter Phase 6 loop |
+
+**CRITICAL:** After finishing ALL coding tasks, you MUST:
+1. Create TEST_PLAN.md
+2. **⛔ STOP and wait for Human approval**
+3. DO NOT run any tests until Human reviews TEST_PLAN.md!
+
+### Project Summary (UPDATE IN PHASE 2!)
+<!-- This section will be filled after PRD review in Phase 2 -->
+- **App Type**: [to be filled]
+- **Tech Stack**: [to be filled]
+- **Core Features**: [to be filled]
+- **Current Phase**: Phase 1 (Research)
+
+### Primary Documentation
+- `PRD.md` - Full product requirements (lazy-read sections when needed)
+- `IMPLEMENTATION_PLAN.md` - Task tracking with checkboxes
+- `TEST_PLAN.md` - Test cases and results (created in Phase 4)
+
+### Coding Guidelines
+- Follow `IMPLEMENTATION_PLAN.md` for tasks
+- Use typed language as specified in PRD.md
+- Mark completed tasks with `[x]`
+- Keep code minimal and focused
+```
+
+#### 1.1b: Setup Context Recovery Hook (Claude Code only)
+
+Add this hook to `.claude/settings.json` in the project root:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/skills/vibe-builder/scripts/context-recovery.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Note:** If `.claude/settings.json` already exists, merge the hooks section.
+
+---
+
+### Step 1.2: Deep Research (MANDATORY - BE THOROUGH)
 
 **This step is CRITICAL. Research deeply before writing anything.**
 
@@ -40,7 +126,7 @@ Use WebSearch extensively to research:
 
 **Synthesize findings** before proceeding - don't just collect links, understand the patterns.
 
-### Step 1.2: Select Technology Stack
+### Step 1.3: Select Technology Stack
 
 **Infrastructure: Docker-First Approach**
 
@@ -68,7 +154,7 @@ Always prioritize using Docker for local development. Search for existing Docker
 
 If Human specified preferences, use those instead.
 
-### Step 1.3: Create PRD.md (Product Requirements Document)
+### Step 1.4: Create PRD.md (Product Requirements Document)
 
 **PRD.md must be detailed enough that anyone reading it can visualize EXACTLY what the app will be.**
 
@@ -189,49 +275,6 @@ Create a file `PRD.md` in the project root. Include **diagrams, flowcharts, and 
 - [ ] All features have acceptance criteria
 - [ ] Tech choices are justified
 
-### Step 1.4: Update or Create AI Tool Configuration File
-
-Detect the current AI coding tool and update/create the appropriate configuration file in the project root.
-
-**Detection: Run the bundled script**
-
-Execute the detection script to determine which AI tool is running:
-
-```bash
-bash ~/.claude/skills/vibe-builder/scripts/detect-ai-tool.sh
-```
-
-The script returns one of: `CLAUDE`, `GEMINI`, or `UNKNOWN`.
-
-| Result    | Action                                     |
-| --------- | ------------------------------------------ |
-| `CLAUDE`  | Create/update `CLAUDE.md`                  |
-| `GEMINI`  | Create/update `GEMINI.md`                  |
-| `UNKNOWN` | Ask the Human which AI tool they are using |
-
-**Section to add/merge** (use header `# Claude Code Project Rules` or `# Gemini Project Rules` if creating new file):
-
-```markdown
-## Vibe Builder Project Reference
-
-### Primary Documentation
-- `PRD.md` - Full product requirements (read when detailed specs needed)
-- `IMPLEMENTATION_PLAN.md` - Task tracking with checkboxes
-- `TEST_PLAN.md` - Test cases and results (created in Phase 4)
-
-### Coding Guidelines
-- Follow `IMPLEMENTATION_PLAN.md` for tasks
-- Use typed language as specified in PRD.md
-- Mark completed tasks with `[x]`
-- Keep code minimal and focused
-
-### Context Management
-- This file = quick rules for coding sessions
-- PRD.md = full details (always lazy-read this PRD.md file when needed informations about current Product, it so long that need lazy-read partly for saving tokens of context window)
-```
-
-**Important:** If file exists, append this section. Never overwrite existing rules.
-
 ### Step 1.5: Create IMPLEMENTATION_PLAN.md
 
 Create a file `IMPLEMENTATION_PLAN.md` with detailed implementation tasks:
@@ -267,6 +310,17 @@ Create a file `IMPLEMENTATION_PLAN.md` with detailed implementation tasks:
 - [ ] Integration testing
 - [ ] Error handling
 - [ ] Performance optimization
+
+---
+
+## ⚠️ WORKFLOW CHECKPOINT REMINDER
+**When ALL tasks above are marked [x]:**
+1. ✅ Report "Phase 3 Complete"
+2. 📝 Create TEST_PLAN.md
+3. ⛔ **STOP and wait for Human to review TEST_PLAN.md**
+4. Only proceed to run tests AFTER Human approves
+
+**Context Overflow?** Re-read skill file: `~/.claude/skills/vibe-builder/SKILL.md`
 
 ---
 
@@ -307,16 +361,40 @@ Update `PRD.md` and `IMPLEMENTATION_PLAN.md` based on feedback:
 - Adjust technical decisions
 - Add missing requirements
 - Remove unnecessary items
-- Also update `CLAUDE.md` or `GEMINI.md` if rules need adjustment
 
-### Step 2.3: Confirm Technology
+### Step 2.3: Update Project Summary in CLAUDE.md/GEMINI.md (ALWAYS DO THIS!)
+
+**ALWAYS update CLAUDE.md or GEMINI.md with project summary - even if Human has no changes!**
+
+This info is always in context and helps you stay on track. Keep it **token-efficient** (max 20-30 lines).
+
+**Add/update this section:**
+
+```markdown
+### Project Summary (from PRD.md)
+- **App Type**: [web app/CLI/mobile/etc]
+- **Tech Stack**: [language] + [framework] + [database]
+- **Core Features**: [3-5 key features in 1 line each]
+- **Docker Services**: [list services from docker-compose]
+
+### Current Phase
+- **Status**: Phase 2 approved, ready for coding
+- **Next**: Phase 3 (Autonomous Coding)
+```
+
+**Why this matters:**
+- CLAUDE.md/GEMINI.md is ALWAYS in context
+- When context overflows, this summary helps agent remember key decisions
+- Prevents agent from asking redundant questions
+
+### Step 2.4: Confirm Technology
 
 Verify the technology stack meets these requirements:
 - **Typed language** (TypeScript, Rust, Python with type hints)
 - Appropriate for the app type
 - Human is comfortable with the choice
 
-### Step 2.4: Request Final Approval
+### Step 2.5: Request Final Approval
 
 Present the updated documentation and ask:
 - "Is the PRD accurate and complete?"
@@ -368,6 +446,12 @@ EVERY 3-5 TASKS:
   1. Re-read IMPLEMENTATION_PLAN.md - check current progress
   2. Re-read relevant PRD.md section - verify implementation matches spec
   3. Ensure you're building what was specified, not drifting
+
+WHEN CONTEXT FEELS FULL OR YOU FEEL LOST:
+  1. Re-read this skill file: ~/.claude/skills/vibe-builder/SKILL.md
+  2. Re-read IMPLEMENTATION_PLAN.md - find where you are
+  3. Check CLAUDE.md/GEMINI.md "WORKFLOW CHECKPOINTS" section (already in context)
+  4. Remember: After coding complete → TEST_PLAN.md → STOP for Human review
 ```
 
 **When implementing a feature:**
@@ -430,11 +514,21 @@ Keep reports minimal - focus on coding, not reporting.
 
 Continue until ALL IMPLEMENTATION_PLAN.md tasks are marked `[x]`.
 
+**When ALL implementation tasks are complete:**
+1. Report: "✅ Phase 3 Complete. All implementation tasks done."
+2. Immediately proceed to PHASE 4 (Testing Setup)
+3. Create TEST_PLAN.md
+4. **STOP and wait for Human review** (Phase 4 is a checkpoint!)
+
 ---
 
 ## PHASE 4: Testing Setup
 
 **Goal:** Create a comprehensive test plan before executing tests.
+
+**⛔ THIS PHASE ENDS WITH MANDATORY HUMAN REVIEW ⛔**
+
+You will create TEST_PLAN.md and then STOP for Human approval. Do NOT execute tests in this phase.
 
 ### Step 4.1: Stop New Features
 
@@ -471,20 +565,32 @@ Create a file `TEST_PLAN.md` with detailed test cases:
 | ...  | PENDING | ...   |
 ```
 
-### Step 4.3: Present Test Plan
+### Step 4.3: Present Test Plan & Wait for Approval
 
 Summarize the test coverage:
 - Number of unit tests planned
 - Key integration tests
 - Critical user flows to test
 
-**STOP and wait for Human to review TEST_PLAN.md. Human may add missing test cases.**
+**⛔ MANDATORY CHECKPOINT - DO NOT SKIP ⛔**
+
+```
+YOU MUST:
+1. Present TEST_PLAN.md summary to Human
+2. Ask: "Please review TEST_PLAN.md. Any test cases to add/modify?"
+3. WAIT for Human response
+4. DO NOT proceed to Phase 5 until Human explicitly approves
+```
+
+**STOP HERE. Do NOT execute any tests until Human reviews and approves TEST_PLAN.md.**
 
 ---
 
 ## PHASE 5: Testing Execution
 
 **Goal:** Execute tests, fix errors, ensure quality.
+
+**⚠️ PREREQUISITE: Human must have approved TEST_PLAN.md in Phase 4 ⚠️**
 
 **AUTONOMOUS EXECUTION - Run continuously until all tests pass.**
 
@@ -590,10 +696,10 @@ Continue the loop until Human is satisfied with the product.
 
 ### Autonomous Execution Rules
 1. **Full Self-Setup** - YOU setup everything: Docker, databases, configs, dependencies. NEVER ask Human to do setup tasks.
-2. **Context Sync Every 3-5 Tasks** - Re-read PRD.md and IMPLEMENTATION_PLAN.md frequently to stay on-track. Don't drift from spec.
+2. **Context Sync** - Every 3-5 tasks: re-read PRD.md + IMPLEMENTATION_PLAN.md. When context full: re-read skill file + IMPLEMENTATION_PLAN.md + TEST_PLAN.md. Check CLAUDE.md/GEMINI.md for workflow checkpoints (already in context).
 3. **Self-Resolve Blockers** - Debug and fix technical issues yourself. Only ask Human about unclear business requirements.
 4. **Continuous Coding** - Once Human approves in Phase 2, code NON-STOP until complete. Don't ask questions - answers are in PRD.md.
-5. **Human Checkpoints** - STOP only at Phase 1, 2, and 4. Phase 3 & 5 are FULLY AUTONOMOUS.
+5. **Human Checkpoints** - STOP and wait for explicit approval at Phase 1, 2, and 4. NEVER skip these checkpoints. Phase 3 & 5 are autonomous ONLY AFTER Human approves the preceding phase.
 
 ### Research & Documentation Rules
 6. **Deep Research First** - ALWAYS do thorough WebSearch (5-8 searches) before writing PRD. Understand the domain deeply.
