@@ -22,6 +22,7 @@ TARGET_DIR=""
 LIST_ONLY=false
 FORCE=false
 PICK_INDIVIDUAL=false
+INSTALL_ALL=false
 
 cleanup() {
   if [ -n "$TMP_DIR" ] && [ -d "$TMP_DIR" ]; then
@@ -46,6 +47,10 @@ usage() {
   echo "  npx vibecodekit [options]"
   echo ""
   echo -e "${BOLD}Options:${NC}"
+  echo "  --all            Install all skills to .claude (non-interactive)"
+  echo "  --claude         Install all skills to .claude"
+  echo "  --cursor         Install all skills to .cursor"
+  echo "  --agent          Install all skills to .agent"
   echo "  --target <dir>   Set target directory (.claude, .cursor, .agent)"
   echo "  --list           List available skills"
   echo "  --pick           Pick individual skills to install"
@@ -54,8 +59,9 @@ usage() {
   echo ""
   echo -e "${BOLD}Examples:${NC}"
   echo "  npx vibecodekit                    # Interactive mode"
-  echo "  npx vibecodekit --target .claude   # Install to .claude"
-  echo "  npx vibecodekit --target .cursor   # Install to .cursor"
+  echo "  npx vibecodekit --all              # Install all to .claude"
+  echo "  npx vibecodekit --claude           # Install to .claude"
+  echo "  npx vibecodekit --agent            # Install to .agent"
   echo "  npx vibecodekit --list             # List available skills"
   echo ""
 }
@@ -281,6 +287,10 @@ main() {
         TARGET_DIR="$1"
         shift
         ;;
+      --all) INSTALL_ALL=true; TARGET_DIR=".claude"; shift ;;
+      --claude) TARGET_DIR=".claude"; shift ;;
+      --cursor) TARGET_DIR=".cursor"; shift ;;
+      --agent) TARGET_DIR=".agent"; shift ;;
       --list) LIST_ONLY=true; shift ;;
       --pick) PICK_INDIVIDUAL=true; shift ;;
       --force) FORCE=true; shift ;;

@@ -20,15 +20,18 @@ npx vibecodekit --all
 
 ```bash
 # Interactive mode — choose what to install
-curl -fsSL https://raw.githubusercontent.com/Neurons-AI/vibecodekit/main/install.sh | bash
+npx vibecodekit
 
-# Install only Claude Code skills
+# Install all skills to .claude
 npx vibecodekit --claude
 
-# Install only Antigravity agents
+# Install all skills to .cursor
+npx vibecodekit --cursor
+
+# Install all skills to .agent (Antigravity/Codex)
 npx vibecodekit --agent
 
-# List available skills and agents
+# List available skills
 npx vibecodekit --list
 
 # Pick individual skills to install
