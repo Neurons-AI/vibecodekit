@@ -91,7 +91,7 @@ Add this hook to `.claude/settings.json` in the project root:
         "hooks": [
           {
             "type": "command",
-            "command": ""$CLAUDE_PROJECT_DIR"/.claude/skills/vibe-builder/scripts/context-recovery.sh"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/skills/vibe-builder/scripts/context-recovery.sh"
           }
         ]
       }
