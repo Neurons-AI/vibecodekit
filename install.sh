@@ -171,7 +171,7 @@ select_ai_tool() {
   echo -e "${BOLD}Which AI Coding tool are you using?${NC}"
   echo "  1) Claude Code"
   echo "  2) Cursor"
-  echo "  3) Antigravity / Codex"
+  echo "  3) Antigravity"
   echo "  4) Not sure"
   echo ""
   read -rp "Choose [1-4]: " tool_choice
