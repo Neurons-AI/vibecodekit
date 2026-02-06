@@ -3,7 +3,7 @@ name: vibe-deployer
 description: DevOps agent with complete Docker deployment skill - Build, Push, Deploy to any platform. Supports all major registries, cloud platforms, and CI/CD pipelines.
 disable-model-invocation: true
 argument-hint: "[action] - Options: build, push, deploy, ci-cd, full"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(docker:*), Bash(docker-compose:*)
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(docker:*), Bash(docker-compose:*), Bash(curl:*), Bash(sleep:*)
 ---
 
 # Docker Deploy Skill
@@ -15,21 +15,21 @@ Complete Docker deployment solution cho bất kỳ project nào. Hỗ trợ tấ
 ## Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                       DOCKER DEPLOY WORKFLOW                             │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐         │
-│   │  BUILD   │ -> │   PUSH   │ -> │  DEPLOY  │ -> │ RUNNING  │         │
-│   │  Image   │    │ Registry │    │ Platform │    │   App    │         │
-│   └──────────┘    └──────────┘    └──────────┘    └──────────┘         │
-│        │               │               │                                 │
-│        v               v               v                                 │
-│   templates/      registries/     platforms/                            │
-│                                                                          │
-│   + CI/CD Automation ──────────────────────────> ci-cd/                 │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                          DOCKER DEPLOY WORKFLOW                                   │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                   │
+│  ┌────────┐   ┌────────────┐   ┌────────┐   ┌────────┐   ┌─────────┐           │
+│  │ BUILD  │-->│ LOCAL TEST │-->│  PUSH  │-->│ DEPLOY │-->│ RUNNING │           │
+│  │ Image  │   │  & Verify  │   │Registry│   │Platform│   │   App   │           │
+│  └────────┘   └────────────┘   └────────┘   └────────┘   └─────────┘           │
+│       │             │               │             │                               │
+│       v             v               v             v                               │
+│  templates/    (local docker)  registries/   platforms/                          │
+│                                                                                   │
+│  + CI/CD Automation ────────────────────────────────> ci-cd/                    │
+│                                                                                   │
+└──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -110,7 +110,141 @@ index.html (no backend)         → Static
 
 ---
 
-### Step 2: Choose Container Registry
+### Step 2: Local Build & Test
+
+**QUAN TRỌNG:** Sau khi tạo xong các file cấu hình Docker, PHẢI build và test trên local để đảm bảo mọi thứ hoạt động trước khi push/deploy.
+
+#### 2.1 - Build Docker Image
+
+```bash
+# Build image từ Dockerfile vừa tạo
+docker build -t {app-name}:local-test .
+
+# Verify image được tạo thành công
+docker images {app-name}:local-test
+```
+
+**Kiểm tra:**
+- [ ] Build thành công, không có error
+- [ ] Image size hợp lý (< 500MB cho hầu hết apps)
+- [ ] Tất cả build stages hoàn tất
+
+**Nếu build FAIL:** Đọc error log, sửa Dockerfile, build lại cho đến khi thành công.
+
+#### 2.2 - Test Docker Container
+
+```bash
+# Chạy container từ image vừa build
+docker run -d -p {host-port}:{container-port} --name {app-name}-test {app-name}:local-test
+
+# Đợi container khởi động
+sleep 5
+
+# Kiểm tra container đang chạy
+docker ps --filter "name={app-name}-test"
+
+# Kiểm tra logs - xem có error không
+docker logs {app-name}-test
+
+# Test health endpoint (nếu có)
+curl -f http://localhost:{host-port}/health || curl -f http://localhost:{host-port}/api/health || curl -f http://localhost:{host-port}/
+
+# Kiểm tra resource usage
+docker stats {app-name}-test --no-stream
+```
+
+**Kiểm tra:**
+- [ ] Container status = `running` (không phải `exited` hay `restarting`)
+- [ ] Logs không có error nghiêm trọng
+- [ ] App response OK khi curl (HTTP 200)
+- [ ] Resource usage hợp lý (không memory leak)
+
+**Nếu container FAIL:**
+1. Kiểm tra logs: `docker logs {app-name}-test`
+2. Debug bằng interactive shell: `docker run -it --entrypoint sh {app-name}:local-test`
+3. Sửa Dockerfile hoặc code, quay lại bước 2.1
+
+```bash
+# Cleanup container test
+docker stop {app-name}-test && docker rm {app-name}-test
+```
+
+#### 2.3 - Test Docker Compose
+
+```bash
+# Test docker-compose.yml (development)
+docker-compose up -d
+
+# Đợi tất cả services khởi động
+sleep 10
+
+# Kiểm tra tất cả services đang chạy
+docker-compose ps
+
+# Kiểm tra logs tất cả services
+docker-compose logs --tail=50
+
+# Test app endpoint
+curl -f http://localhost:{host-port}/health || curl -f http://localhost:{host-port}/
+
+# Kiểm tra network connectivity giữa services
+docker-compose exec app sh -c "echo 'Container is accessible'"
+```
+
+**Kiểm tra:**
+- [ ] Tất cả services status = `Up` / `running`
+- [ ] Không có service nào bị restart loop
+- [ ] Database connection thành công (nếu có)
+- [ ] App có thể communicate với dependent services
+
+```bash
+# Cleanup docker-compose
+docker-compose down -v
+```
+
+#### 2.4 - Test Docker Compose Production (nếu có)
+
+```bash
+# Test docker-compose.prod.yml
+docker-compose -f docker-compose.prod.yml up -d
+
+# Đợi services khởi động
+sleep 10
+
+# Kiểm tra services
+docker-compose -f docker-compose.prod.yml ps
+
+# Kiểm tra logs
+docker-compose -f docker-compose.prod.yml logs --tail=50
+
+# Test app
+curl -f http://localhost:{host-port}/
+
+# Cleanup
+docker-compose -f docker-compose.prod.yml down -v
+```
+
+#### 2.5 - Báo cáo kết quả
+
+Sau khi test xong, báo cáo cho user:
+
+```
+📋 LOCAL BUILD & TEST REPORT
+═══════════════════════════════════════
+✅/❌ Docker Build:     [PASS/FAIL] - Image size: XXX MB
+✅/❌ Container Run:    [PASS/FAIL] - Status: running/exited
+✅/❌ Health Check:     [PASS/FAIL] - HTTP {status_code}
+✅/❌ Docker Compose:   [PASS/FAIL] - {N} services running
+✅/❌ Compose Prod:     [PASS/FAIL] - {N} services running
+═══════════════════════════════════════
+```
+
+**Nếu tất cả PASS:** Tiếp tục sang Step 3 (Choose Registry).
+**Nếu có FAIL:** Sửa lỗi và test lại cho đến khi tất cả PASS. KHÔNG được tiếp tục nếu local test chưa pass.
+
+---
+
+### Step 3: Choose Container Registry
 
 Hỏi user muốn push image lên registry nào:
 
@@ -127,7 +261,7 @@ Hỏi user muốn push image lên registry nào:
 
 ---
 
-### Step 3: Choose Deployment Platform
+### Step 4: Choose Deployment Platform
 
 Hỏi user muốn deploy lên platform nào:
 
@@ -143,7 +277,7 @@ Hỏi user muốn deploy lên platform nào:
 
 ---
 
-### Step 4: Setup CI/CD (Optional)
+### Step 5: Setup CI/CD (Optional)
 
 Hỏi user có muốn setup CI/CD không:
 
@@ -303,5 +437,6 @@ See [checklist.md](checklist.md) for common issues and solutions.
 
 ## Version History
 
+- **v2.1.0** - Added Step 2: Local Build & Test - build và verify Docker image/container/compose trên local trước khi push/deploy
 - **v2.0.0** - Added registries, platforms, CI/CD guides
 - **v1.0.0** - Initial release with Dockerfile templates

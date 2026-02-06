@@ -1,6 +1,6 @@
 {
   "name": "vibecodekit",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "Prebuilt skills and agents for Vibe Coding — Claude Code & Antigravity",
   "bin": {
     "vibecodekit": "./bin/cli.js"
