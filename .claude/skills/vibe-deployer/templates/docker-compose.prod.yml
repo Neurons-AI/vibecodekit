@@ -1,0 +1,145 @@
+# ============================================
+# Docker Compose - Production Configuration
+# ============================================
+# Usage: docker-compose -f docker-compose.prod.yml up -d
+
+services:
+  # ==================== APPLICATION ====================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner  # Use production stage
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+    env_file:
+      - .env.production
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+      replicas: 1
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ==================== REVERSE PROXY (NGINX) ====================
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certs:/etc/nginx/certs:ro
+      - nginx_logs:/var/log/nginx
+    restart: always
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - app-network
+    depends_on:
+      - app
+
+  # ==================== DATABASE ====================
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups  # For database backups
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+    networks:
+      - app-network
+    # Don't expose port in production - access via internal network only
+
+  # ==================== CACHE ====================
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 100mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+    networks:
+      - app-network
+
+# ==================== VOLUMES ====================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+# ==================== NETWORKS ====================
+networks:
+  app-network:
+    driver: bridge
+
+# ============================================
+# DEPLOYMENT COMMANDS:
+#
+# # Build and start
+# docker-compose -f docker-compose.prod.yml up -d --build
+#
+# # View logs
+# docker-compose -f docker-compose.prod.yml logs -f
+#
+# # Scale app (if using swarm mode)
+# docker-compose -f docker-compose.prod.yml up -d --scale app=3
+#
+# # Backup database
+# docker-compose -f docker-compose.prod.yml exec postgres pg_dump -U $DB_USER $DB_NAME > backup.sql
+#
+# # Update app only
+# docker-compose -f docker-compose.prod.yml up -d --build --no-deps app
+# ============================================

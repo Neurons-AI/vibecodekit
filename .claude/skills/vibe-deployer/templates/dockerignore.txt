@@ -1,0 +1,179 @@
+# ============================================
+# .dockerignore Template
+# Copy content to .dockerignore in project root
+# ============================================
+
+# ==================== COMMON ====================
+
+# Dependencies (will be installed in container)
+node_modules
+.pnp
+.pnp.js
+vendor
+__pycache__
+*.py[cod]
+venv
+.venv
+target
+
+# Build outputs (will be built in container)
+.next
+out
+dist
+build
+*.tsbuildinfo
+bin
+obj
+
+# Environment files - NEVER include in image
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+.env.test
+*.env
+!.env.example
+
+# ==================== TESTING ====================
+coverage
+.nyc_output
+.pytest_cache
+htmlcov
+test-results
+*.test.js
+*.spec.js
+__tests__
+tests
+test
+
+# ==================== IDE & EDITORS ====================
+.idea
+.vscode
+*.swp
+*.swo
+*.sublime-*
+.project
+.classpath
+.settings
+
+# ==================== OS FILES ====================
+.DS_Store
+Thumbs.db
+desktop.ini
+*.lnk
+
+# ==================== VERSION CONTROL ====================
+.git
+.gitignore
+.gitattributes
+.svn
+.hg
+
+# ==================== DOCUMENTATION ====================
+*.md
+!README.md
+docs
+documentation
+CHANGELOG*
+LICENSE*
+CONTRIBUTING*
+
+# ==================== DOCKER (prevent recursion) ====================
+Dockerfile*
+docker-compose*
+.dockerignore
+.docker
+
+# ==================== LOGS ====================
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==================== MISC ====================
+.cache
+.tmp
+tmp
+temp
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# ==================== LANGUAGE SPECIFIC ====================
+
+# --- Node.js ---
+.npm
+.yarn
+.pnpm-store
+bower_components
+
+# --- Python ---
+*.egg-info
+.eggs
+*.egg
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.installed.cfg
+MANIFEST
+
+# --- Go ---
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# --- PHP ---
+composer.phar
+.phpunit.result.cache
+phpunit.xml
+
+# --- Java ---
+*.class
+*.jar
+*.war
+*.ear
+hs_err_pid*
+
+# --- .NET ---
+*.user
+*.userosscache
+*.suo
+*.nupkg
+packages
+
+# --- Rust ---
+Cargo.lock
+debug
+*.pdb
+
+# ==================== SECRETS (Extra Protection) ====================
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+credentials*
+secrets*
+*_rsa
+*_dsa
+*_ed25519
+*_ecdsa
+*.gpg
+*.asc
+
+# ==================== DATABASE ====================
+*.db
+*.sqlite
+*.sqlite3
+# But allow schema files
+!prisma/schema.prisma
+!**/migrations/**
